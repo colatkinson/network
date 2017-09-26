@@ -1,0 +1,12 @@
+{
+    "name": "Test2",
+    "privkey": "04c6b604f75ea695aebac2deb48eaa1223470e239cb0120dad57d72f34d69eff8d53cb7cfed328d909a10a65e6e291f42547429dce04840f2dfcb847699d4ce385",
+    "peers": [
+        {
+            "name": "Test",
+            "addr": "127.0.0.1",
+            "port": 5000
+        }
+    ],
+    "port": 5001
+}

@@ -63,28 +63,6 @@ const servers: Node[] = [];
 
 console.log(privKey.constructor.name);
 
-function derSign(data: string): string {
-    const hash = crypto.createHash('sha256');
-    hash.update(data);
-    const dataHash = hash.digest('hex');
-    // TODO: Fix that this uses an ugly global
-    const sig = privKey.sign(dataHash);
-
-    return sig.toDER('hex');
-}
-
-function derVerify(data: string, pubkey: string, sig: string): boolean {
-    const hash = crypto.createHash('sha256');
-    hash.update(data);
-    const initMsgHash = hash.digest('hex');
-
-    const fKey = ec.keyFromPublic(pubkey, 'hex');
-
-    const ver = fKey.verify(initMsgHash, sig);
-
-    return ver;
-}
-
 for (const peer of config.peers) {
     const socket = new Conn();
     socket.status = ConnectionStatus.None;
@@ -93,59 +71,7 @@ for (const peer of config.peers) {
         console.log(`Connected to ${peer.name}`);
     });
 
-    socket.on('data', (data) => {
-        console.log('<' + data.toString('utf8'));
-
-        const dataJson = JSON.parse(data.toString('utf8'));
-
-        const msgJson = JSON.parse(dataJson.data);
-
-        const ver = derVerify(dataJson.data, msgJson.pubkey, dataJson.sig);
-
-        if (!ver) {
-            socket.end();
-            return;
-        }
-
-        if (socket.status === ConnectionStatus.None) {
-            socket.status = ConnectionStatus.ServerInfoSent;
-
-            const signedChallenge = derSign(msgJson.challenge);
-
-            const tmpKeyPair = ec.genKeyPair();
-            socket.tmpPrivkey = tmpKeyPair.getPrivate('hex');
-
-            const initMsgData = {
-                challengeSig: signedChallenge,
-                name,
-                pubkey: privKey.getPublic().encode('hex'),
-                timestamp: Date.now(),
-                tmpPubkey: tmpKeyPair.getPublic().encode('hex'),
-                version: '1.0.0',
-            };
-            const initMsgString = JSON.stringify(initMsgData);
-
-            const signedInitMsg = {
-                data: initMsgString,
-                sig: derSign(initMsgString),
-            };
-
-            socket.write(JSON.stringify(signedInitMsg));
-
-            socket.status = ConnectionStatus.ClientInfoSent;
-
-            socket.tmpFPubkey = msgJson.tmpPubkey;
-
-            const tmpFPubkey = ec.keyFromPublic(socket.tmpFPubkey, 'hex');
-            const tmpPrivkey = ec.keyFromPrivate(socket.tmpPrivkey, 'hex');
-
-            const secret = tmpPrivkey.derive(tmpFPubkey.getPublic());
-
-            console.log(secret.toString(16, 64));
-
-            socket.status = ConnectionStatus.Connected;
-        }
-    });
+    socket.on('data', clientNegotiate);
 
     socket.on('close', () => {
         console.log('Closed');

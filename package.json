@@ -17,7 +17,9 @@
     "start": "yarn build && node ./build/index.js"
   },
   "dependencies": {
+    "@types/redux": "^3.6.0",
     "elliptic": "^6.4.0",
+    "redux": "^3.7.2",
     "uuid": "^3.1.0"
   }
 }

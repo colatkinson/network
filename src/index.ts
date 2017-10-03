@@ -239,6 +239,7 @@
 
 import * as net from 'net';
 import * as uuidv4 from 'uuid/v4';
+import * as zmq from 'zmq';
 
 import { createStore } from 'redux';
 import networkApp from './reducers';

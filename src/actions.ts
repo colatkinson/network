@@ -1,62 +1,49 @@
-import * as net from 'net';
+import * as zmq from 'zmq';
 
-export const CLIENT_SOCK_OPEN = 'CLIENT_SOCK_OPEN';
-export const SERVER_SOCK_OPEN = 'SERVER_SOCK_OPEN';
-export const CLIENT_RECV_CERT = 'CLIENT_RECV_CERT';
-export const SERVER_SEND_CERT = 'SERVER_SEND_CERT';
-export const CLIENT_SEND_RESP = 'CLIENT_SEND_RESP';
+export const OUT_OPEN = 'OUT_OPEN';
+export const IN_OPEN = 'IN_OPEN';
+export const GEN_CERT = 'GEN_CERT';
 export const SECRET_EST = 'SECRET_EST';
 
 export interface ICert {
     challenge: string;
     name: string;
     pubkey: string;
+    recip: string;
     timestamp: number;
     tmpPubKey: string;
     version: string;
 }
 
-export class ExtSock extends net.Socket {
-    public uuid: string;
+export interface ISocket extends zmq.Socket {
+    name: string;
 }
 
-export function clientOpenSock(socket: ExtSock) {
+export function outOpen(socket: ISocket) {
     return {
         socket,
-        type: CLIENT_SOCK_OPEN,
+        type: OUT_OPEN,
     };
 }
 
-export function serverOpenSock(socket: ExtSock) {
+export function inOpen(socket: ISocket, cert: ICert) {
     return {
+        cert,
         socket,
-        type: SERVER_SOCK_OPEN,
+        type: IN_OPEN,
     };
 }
 
-export function clientRecvCert(cert: ICert) {
+export function genCert(cert: ICert) {
     return {
         cert,
-        type: CLIENT_RECV_CERT,
+        type: GEN_CERT,
     };
 }
 
-export function serverSendCert(cert: ICert) {
+export function secretEst(name: string, secret: string) {
     return {
-        cert,
-        type: SERVER_SEND_CERT,
-    };
-}
-
-export function clientSendResp(cert: ICert) {
-    return {
-        cert,
-        type: CLIENT_SEND_RESP,
-    };
-}
-
-export function secretEst(secret: string) {
-    return {
+        name,
         secret,
         type: SECRET_EST,
     };

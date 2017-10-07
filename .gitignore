@@ -1,4 +1,5 @@
 privkey
+src/old_index.ts
 
 # Built files
 build/

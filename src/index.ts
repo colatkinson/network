@@ -1,18 +1,14 @@
-import * as crypto from 'crypto';
-import * as elliptic from 'elliptic';
 import * as fs from 'fs';
 import * as net from 'net';
 import * as uuidv4 from 'uuid/v4';
+import * as zmq from 'zmq';
 
-// const hash = crypto.createHash('sha256');
+import { createStore } from 'redux';
+import networkApp from './reducers';
 
-const EC = elliptic.ec;
-const ec = new EC('secp256k1');
+import { repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from './actions';
+import { genCert, genSignedMsg, verifySignedMsg, deriveSecret } from './cryptoFuncs';
 
-// const privKeyString = fs.readFileSync('privkey', 'utf8').trim();
-// const name = fs.readFileSync('name', 'utf8').trim();
-
-console.log(process.argv);
 const configFile = (process.argv.length > 2) ? process.argv[2] : 'config.json';
 
 interface IConfig {
@@ -29,210 +25,70 @@ interface IConfig {
 const configStr = fs.readFileSync(configFile, 'utf8');
 const config: IConfig = JSON.parse(configStr);
 
-const name = config.name;
-const port = config.port;
+const store = createStore(networkApp);
 
-const privKey = ec.keyFromPrivate(config.privkey);
-console.log('Loaded private key');
+store.subscribe(() => {
+    console.log(store.getState());
+});
 
-enum ConnectionStatus {
-    None,
-    ServerInfoSent,
-    ClientInfoSent,
-    Connected,
-}
+const repSock = zmq.socket('rep');
+repSock.bindSync('tcp://*:3000');
 
-// interface INode {
-//     socket: net.Socket;
-//     status: ConnectionStatus;
-//     uuid: string;
-// }
+repSock.on('message', function(this: any, msg) {
+    const sigMsg = JSON.parse(msg.toString());
+    const certMsg = JSON.parse(sigMsg.data);
+    if (verifySignedMsg(sigMsg, certMsg.pubkey)) {
+        store.dispatch(reqRecv(certMsg));
 
-class Conn extends net.Socket {
-    public status: ConnectionStatus;
-    public uuid: string;
-    public pubkey: string;
-    public name: string;
-    public tmpFPubkey: string;
-    public tmpPrivkey: string;
-}
+        const challenge = certMsg.challenge;
 
-const connections: Conn[] = [];
+        const serverTuple = genCert('3000', challenge, config.privkey, '127.0.0.1:3000');
+        const serverCert = serverTuple[0];
+        const serverTmpPrivKey = serverTuple[1];
 
-const servers: Node[] = [];
+        const serverSigMsg = genSignedMsg(JSON.stringify(serverCert), config.privkey);
 
-console.log(privKey.constructor.name);
+        // cert.addr = '69.69.69.69:69';
+        // clientSigMsg.data = JSON.stringify(cert);
 
-function derSign(data: string): string {
-    const hash = crypto.createHash('sha256');
-    hash.update(data);
-    const dataHash = hash.digest('hex');
-    // TODO: Fix that this uses an ugly global
-    const sig = privKey.sign(dataHash);
+        repSock.send(JSON.stringify(serverSigMsg));
 
-    return sig.toDER('hex');
-}
+        store.dispatch(repSent(serverCert, serverTmpPrivKey, '3009'));
 
-function derVerify(data: string, pubkey: string, sig: string): boolean {
-    const hash = crypto.createHash('sha256');
-    hash.update(data);
-    const initMsgHash = hash.digest('hex');
+        const serverSec = deriveSecret(serverTmpPrivKey, certMsg.tmpPubKey);
 
-    const fKey = ec.keyFromPublic(pubkey, 'hex');
+        store.dispatch(secretEst('3009', serverSec));
+    }
+});
 
-    const ver = fKey.verify(initMsgHash, sig);
+store.dispatch(repOpen(repSock));
 
-    return ver;
-}
+const reqSock = zmq.socket('req');
+reqSock.on('message', (msg) => {
+    const recvSigMsg = JSON.parse(msg.toString());
+    const recvCertMsg = JSON.parse(recvSigMsg.data);
+    if (verifySignedMsg(recvSigMsg, recvCertMsg.pubkey)) {
+        store.dispatch(repRecv(recvCertMsg));
 
-for (const peer of config.peers) {
-    const socket = new Conn();
-    socket.status = ConnectionStatus.None;
+        const clientSec = deriveSecret(tmpPrivKey, recvCertMsg.tmpPubKey);
+        store.dispatch(secretEst('3000', clientSec));
+    }
+});
 
-    socket.connect(peer.port, peer.addr, () => {
-        console.log(`Connected to ${peer.name}`);
-    });
+store.dispatch(reqOpen(reqSock));
 
-    socket.on('data', (data) => {
-        console.log('<' + data.toString('utf8'));
+reqSock.connect('tcp://127.0.0.1:3000');
+store.dispatch(reqConn('127.0.0.1:3000', '3000'));
 
-        const dataJson = JSON.parse(data.toString('utf8'));
+const tuple = genCert('3009', uuidv4(), config.privkey, '127.0.0.1:3009');
+const cert = tuple[0];
+const tmpPrivKey = tuple[1];
 
-        const msgJson = JSON.parse(dataJson.data);
+const clientSigMsg = genSignedMsg(JSON.stringify(cert), config.privkey);
 
-        const ver = derVerify(dataJson.data, msgJson.pubkey, dataJson.sig);
+// cert.addr = '69.69.69.69:69';
+// clientSigMsg.data = JSON.stringify(cert);
 
-        if (!ver) {
-            socket.end();
-            return;
-        }
+reqSock.send(JSON.stringify(clientSigMsg));
 
-        if (socket.status === ConnectionStatus.None) {
-            socket.status = ConnectionStatus.ServerInfoSent;
-
-            const signedChallenge = derSign(msgJson.challenge);
-
-            const tmpKeyPair = ec.genKeyPair();
-            socket.tmpPrivkey = tmpKeyPair.getPrivate('hex');
-
-            const initMsgData = {
-                challengeSig: signedChallenge,
-                name,
-                pubkey: privKey.getPublic().encode('hex'),
-                timestamp: Date.now(),
-                tmpPubkey: tmpKeyPair.getPublic().encode('hex'),
-                version: '1.0.0',
-            };
-            const initMsgString = JSON.stringify(initMsgData);
-
-            const signedInitMsg = {
-                data: initMsgString,
-                sig: derSign(initMsgString),
-            };
-
-            socket.write(JSON.stringify(signedInitMsg));
-
-            socket.status = ConnectionStatus.ClientInfoSent;
-
-            socket.tmpFPubkey = msgJson.tmpPubkey;
-
-            const tmpFPubkey = ec.keyFromPublic(socket.tmpFPubkey, 'hex');
-            const tmpPrivkey = ec.keyFromPrivate(socket.tmpPrivkey, 'hex');
-
-            const secret = tmpPrivkey.derive(tmpFPubkey.getPublic());
-
-            console.log(secret.toString(16, 64));
-
-            socket.status = ConnectionStatus.Connected;
-        }
-    });
-
-    socket.on('close', () => {
-        console.log('Closed');
-    });
-}
-
-const clients: Conn[] = [];
-
-net.createServer((socket) => {
-    // const curClient = {
-    //     socket,
-    //     status: ConnectionStatus.None,
-    //     uuid: uuidv4(),
-    // };
-    const castSock = socket as Conn;
-
-    clients.push(castSock);
-
-    castSock.status = ConnectionStatus.ServerInfoSent;
-
-    // console.log(socket.address());
-
-    // socket.write("Welcome, friend! You are " + curClient.uuid + '\n');
-
-    const tmpKeyPair = ec.genKeyPair();
-    castSock.tmpPrivkey = tmpKeyPair.getPrivate('hex');
-
-    const initMsgData = {
-        challenge: uuidv4(),
-        name,
-        pubkey: privKey.getPublic().encode('hex'),
-        timestamp: Date.now(),
-        tmpPubkey: tmpKeyPair.getPublic().encode('hex'),
-        version: '1.0.0',
-    };
-    const initMsgString = JSON.stringify(initMsgData);
-
-    const signedInitMsg = {
-        data: initMsgString,
-        sig: derSign(initMsgString),
-    };
-
-    castSock.write(JSON.stringify(signedInitMsg));
-    castSock.status = ConnectionStatus.ServerInfoSent;
-
-    castSock.on('data', function(this: Conn, data: Buffer) {
-        console.log('<' + data.toString('utf8'));
-
-        if (castSock.status === ConnectionStatus.ServerInfoSent) {
-            const dataJson = JSON.parse(data.toString('utf8'));
-
-            const msgJson = JSON.parse(dataJson.data);
-
-            const ver = derVerify(dataJson.data, msgJson.pubkey, dataJson.sig);
-
-            if (!ver) {
-                castSock.end();
-                return;
-            }
-
-            castSock.status = ConnectionStatus.ClientInfoSent;
-
-            castSock.tmpFPubkey = msgJson.tmpPubkey;
-
-            const tmpFPubkey = ec.keyFromPublic(castSock.tmpFPubkey, 'hex');
-            const tmpPrivkey = ec.keyFromPrivate(castSock.tmpPrivkey, 'hex');
-
-            const secret = tmpPrivkey.derive(tmpFPubkey.getPublic());
-
-            console.log(secret.toString(16, 64));
-
-            castSock.status = ConnectionStatus.Connected;
-        }
-    });
-
-    socket.on('end', () => {
-        let index = -1;
-        for (let i = 0; i < clients.length; ++i) {
-            if (clients[i] === castSock) {
-                index = i;
-                break;
-            }
-        }
-
-        if (index >= 0) {
-            console.log('Disconnect client ' + clients[index].name);
-            clients.splice(index, 1);
-        }
-    });
-}).listen(port);
+store.dispatch(reqSent(cert, tmpPrivKey, ['3000']));

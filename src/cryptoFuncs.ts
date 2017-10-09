@@ -58,3 +58,12 @@ export function genSignedMsg(data: string, privKeyStr: string): ISignedData {
 export function verifySignedMsg(msg: ISignedData, pubKeyStr: string): boolean {
     return derVerify(msg.data, pubKeyStr, msg.sig);
 }
+
+export function deriveSecret(privkeyStr: string, pubkeyStr: string): string {
+    const pubkey = ec.keyFromPublic(pubkeyStr, 'hex');
+    const privkey = ec.keyFromPrivate(privkeyStr, 'hex');
+
+    const secret = privkey.derive(pubkey.getPublic());
+
+    return secret.toString(16, 64);
+}

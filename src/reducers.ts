@@ -152,25 +152,38 @@ function networkApp(state = initialState, action: IAction) {
             const newForeignCerts = { ...state.foreignCerts };
             newForeignCerts[action.cert.name] = action.cert;
 
+            const newIpsToNames = { ...state.ipsToNames };
+            newIpsToNames[action.cert.addr] = action.cert.name;
+
+            const newNamesToIps = { ...state.namesToIps };
+            newNamesToIps[action.cert.name] = action.cert.addr;
+
             const newState = {
                 ...state,
                 foreignCerts: newForeignCerts,
+                namesToIps: newNamesToIps,
+                ipsToNames: newIpsToNames,
             };
 
             return newState;
         }
         case REP_SENT: {
-            if (typeof action.cert === 'undefined' || typeof action.name === 'undefined') {
-                throw new Error('Cert or name undefined in REP_SENT');
+            if (typeof action.cert === 'undefined' ||
+                typeof action.name === 'undefined' ||
+                typeof action.tmpPrivKey === 'undefined') {
+                throw new Error('Cert or name or privkey undefined in REP_SENT');
             }
 
             const newNativeCerts = { ...state.nativeCerts };
+            const newTmpPrivKeys = { ...state.tmpPrivKeys };
 
-            newNativeCerts[name] = action.cert;
+            newNativeCerts[action.name] = action.cert;
+            newTmpPrivKeys[action.name] = action.tmpPrivKey;
 
             const newState = {
                 ...state,
                 nativeCerts: newNativeCerts,
+                tmpPrivKeys: newTmpPrivKeys,
             };
 
             return newState;

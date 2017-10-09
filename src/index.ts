@@ -6,8 +6,8 @@ import * as zmq from 'zmq';
 import { createStore } from 'redux';
 import networkApp from './reducers';
 
-import { repOpen, reqOpen, reqConn, reqSent } from './actions';
-import { genCert, genSignedMsg, verifySignedMsg } from './cryptoFuncs';
+import { repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from './actions';
+import { genCert, genSignedMsg, verifySignedMsg, deriveSecret } from './cryptoFuncs';
 
 const configFile = (process.argv.length > 2) ? process.argv[2] : 'config.json';
 
@@ -31,56 +31,48 @@ store.subscribe(() => {
     console.log(store.getState());
 });
 
-// for (const peer of config.peers) {
-// const recv = zmq.socket('pull');
-// recv.connect('tcp://127.0.0.1:3000');
-// console.log('connected');
-
-// recv.on('message', function(this: any, msg) {
-//     console.log(msg.toString());
-//     console.log(this);
-// });
-// }
-
-// const testCert =  {
-//     challenge: 'asdf',
-//     name: 'test',
-//     pubkey: '1612',
-//     recip: 'jundy',
-//     timestamp: Date.now(),
-//     tmpPubKey: 'c0ffee',
-//     version: '1.0.0',
-// };
-
-// store.dispatch(genCert(testCert));
-
-// const sock = zmq.socket('req');
-// sock.bindSync('tcp://127.0.0.1:3000');
-// sock.send('yo');
-// sock.on('message', function(this: any, asdf) {
-//     console.log(asdf);
-//     this.send('hi');
-// });
-
 const repSock = zmq.socket('rep');
-// repSock.connect('tcp://127.0.0.1:3000');
 repSock.bindSync('tcp://*:3000');
-console.log('connected');
 
 repSock.on('message', function(this: any, msg) {
-    console.log('server recvd: ' + msg.toString());
-    // console.log(this);
     const sigMsg = JSON.parse(msg.toString());
     const certMsg = JSON.parse(sigMsg.data);
-    console.log('Ver: ' + verifySignedMsg(sigMsg, certMsg.pubkey));
-    this.send('ahoy');
+    if (verifySignedMsg(sigMsg, certMsg.pubkey)) {
+        store.dispatch(reqRecv(certMsg));
+
+        const challenge = certMsg.challenge;
+
+        const serverTuple = genCert('3000', challenge, config.privkey, '127.0.0.1:3000');
+        const serverCert = serverTuple[0];
+        const serverTmpPrivKey = serverTuple[1];
+
+        const serverSigMsg = genSignedMsg(JSON.stringify(serverCert), config.privkey);
+
+        // cert.addr = '69.69.69.69:69';
+        // clientSigMsg.data = JSON.stringify(cert);
+
+        repSock.send(JSON.stringify(serverSigMsg));
+
+        store.dispatch(repSent(serverCert, serverTmpPrivKey, '3009'));
+
+        const serverSec = deriveSecret(serverTmpPrivKey, certMsg.tmpPubKey);
+
+        store.dispatch(secretEst('3009', serverSec));
+    }
 });
 
 store.dispatch(repOpen(repSock));
 
 const reqSock = zmq.socket('req');
 reqSock.on('message', (msg) => {
-    console.log('client recvd: ' + msg.toString());
+    const recvSigMsg = JSON.parse(msg.toString());
+    const recvCertMsg = JSON.parse(recvSigMsg.data);
+    if (verifySignedMsg(recvSigMsg, recvCertMsg.pubkey)) {
+        store.dispatch(repRecv(recvCertMsg));
+
+        const clientSec = deriveSecret(tmpPrivKey, recvCertMsg.tmpPubKey);
+        store.dispatch(secretEst('3000', clientSec));
+    }
 });
 
 store.dispatch(reqOpen(reqSock));
@@ -88,7 +80,7 @@ store.dispatch(reqOpen(reqSock));
 reqSock.connect('tcp://127.0.0.1:3000');
 store.dispatch(reqConn('127.0.0.1:3000', '3000'));
 
-const tuple = genCert('3000', uuidv4(), config.privkey, '127.0.0.1:3000');
+const tuple = genCert('3009', uuidv4(), config.privkey, '127.0.0.1:3009');
 const cert = tuple[0];
 const tmpPrivKey = tuple[1];
 

@@ -71,10 +71,11 @@ export function reqRecv(cert: ICert) {
     };
 }
 
-export function repSent(cert: ICert, name: string) {
+export function repSent(cert: ICert, tmpPrivKey: string, name: string) {
     return {
         cert,
         name,
+        tmpPrivKey,
         type: REP_SENT,
     };
 }

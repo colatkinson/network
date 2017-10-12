@@ -3,4 +3,15 @@ language: node_js
 node_js:
   - "node"
   - "7"
-script: yarn test
+install:
+ - yarn
+ - yarn global add codecov
+script:
+ - yarn test
+ - codecov
+addons:
+  apt:
+    packages:
+    - libzmq3-dbg
+    - libzmq3-dev
+    - libzmq3

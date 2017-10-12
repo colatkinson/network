@@ -6,6 +6,9 @@
     <a href="https://travis-ci.org/colatkinson/network">
         <img src="https://img.shields.io/travis/colatkinson/network.svg?style=flat-square" alt="Travis" />
     </a>
+    <a href="https://codecov.io/gh/colatkinson/network">
+        <img src="https://img.shields.io/codecov/c/github/colatkinson/network.svg?style=flat-square" alt="Codecov" />
+    </a>
 </p>
 
 ## What even is this?
@@ -34,3 +37,4 @@ Please do not contact any contributors privately to disclose a bug. Make an issu
 * Typescript
 * ZeroMQ for socket communication
 * Redux for state management
+* Mocha for testing

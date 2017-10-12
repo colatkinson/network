@@ -9,3 +9,9 @@ install:
 script:
  - yarn test
  - codecov
+addons:
+  apt:
+    packages:
+    - libzmq3-dbg
+    - libzmq3-dev
+    - libzmq3

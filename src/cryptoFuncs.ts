@@ -29,16 +29,20 @@ export function derVerify(data: string, pubKey: string, sig: string): boolean {
     return ver;
 }
 
-export function genCert(name: string, challenge: string, privKeyStr: string, addr: string): [ICert, string] {
-    const privKey = ec.keyFromPrivate(privKeyStr);
+export function privToPub(privkeyStr: string): string {
+    const privkey = ec.keyFromPrivate(privkeyStr);
 
+    return privkey.getPublic().encode('hex');
+}
+
+export function genCert(name: string, challenge: string, privKeyStr: string, addr: string): [ICert, string] {
     const tmpKeyPair = ec.genKeyPair();
     const tmpPrivKey = tmpKeyPair.getPrivate('hex');
 
     const cert: ICert = {
         challenge,
         name,
-        pubkey: privKey.getPublic().encode('hex'),
+        pubkey: privToPub(privKeyStr),
         timestamp: Date.now(),
         tmpPubKey: tmpKeyPair.getPublic().encode('hex'),
         version: '1.0.0',

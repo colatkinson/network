@@ -27,6 +27,23 @@ describe('Redux Reducer', () => {
         expect(state).to.deep.equal(expected);
     });
 
+    it('should return the given state', () => {
+        const expected = {
+            repSock: null,
+            reqSock: null,
+            secrets: {},
+            foreignCerts: {},
+            nativeCerts: {},
+            ipsToNames: {},
+            namesToIps: {},
+            tmpPrivKeys: {},
+        };
+
+        const state = networkApp(expected, { type: null });
+
+        expect(state).to.deep.equal(expected);
+    });
+
     it('should handle REP_OPEN', () => {
         const socket = zmq.createSocket('rep');
 

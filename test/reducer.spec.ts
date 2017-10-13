@@ -8,7 +8,7 @@ import * as zmq from 'zmq';
 import { ICert } from '../src/types';
 
 import networkApp from '../src/reducers';
-import { repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent } from '../src/actions';
+import { repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from '../src/actions';
 import * as rt from '../src/reduxTypes';
 
 const pubkey = '046ea7c4b3cb54ee855c958da1a2f95d7e7898045367da27b012184f288ca8ad2' +
@@ -226,5 +226,55 @@ describe('Redux Reducer', () => {
         const bound = networkApp.bind(networkApp, undefined, { type: rt.REP_SENT });
 
         expect(bound).to.throw(Error, 'Cert or name or privkey undefined in REP_SENT');
+    });
+
+    it('should handle REP_RECV', () => {
+        const state = networkApp(undefined, repRecv(cert));
+
+        const expected = {
+            repSock: null,
+            reqSock: null,
+            secrets: {},
+            foreignCerts: {
+                hera: cert,
+            },
+            nativeCerts: {},
+            ipsToNames: {},
+            namesToIps: {},
+            tmpPrivKeys: {},
+        };
+
+        expect(state).to.deep.equal(expected);
+    });
+
+    it('should throw on undefined cert in REP_RECV', () => {
+        const bound = networkApp.bind(networkApp, undefined, { type: rt.REP_RECV });
+
+        expect(bound).to.throw(Error, 'Cert undefined in REP_RECV');
+    });
+
+    it('should handle SECRET_EST', () => {
+        const state = networkApp(undefined, secretEst('hera', '0123456789abcdef'));
+
+        const expected = {
+            repSock: null,
+            reqSock: null,
+            secrets: {
+                hera: '0123456789abcdef',
+            },
+            foreignCerts: {},
+            nativeCerts: {},
+            ipsToNames: {},
+            namesToIps: {},
+            tmpPrivKeys: {},
+        };
+
+        expect(state).to.deep.equal(expected);
+    });
+
+    it('should throw on undefined name or secret in SECRET_EST', () => {
+        const bound = networkApp.bind(networkApp, undefined, { type: rt.SECRET_EST });
+
+        expect(bound).to.throw(Error, 'Name or secret undefined in SECRET_EST');
     });
 });

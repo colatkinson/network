@@ -190,7 +190,7 @@ function networkApp(state = initialState, action: IAction) {
         }
         case REP_RECV: {
             if (typeof action.cert === 'undefined') {
-                throw new Error('Cert or name undefined in REP_RECV');
+                throw new Error('Cert undefined in REP_RECV');
             }
 
             const newForeignCerts = { ...state.foreignCerts };

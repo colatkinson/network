@@ -1,4 +1,3 @@
-import * as zmq from 'zmq';
 import { ICert, ISocket } from './types';
 import {
     REP_OPEN,

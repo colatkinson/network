@@ -1,6 +1,14 @@
 /* tslint:disable:no-unused-expression */
 
-import { derSign, derVerify, genSignedMsg, verifySignedMsg, deriveSecret } from '../src/cryptoFuncs';
+import {
+    derSign,
+    derVerify,
+    genSignedMsg,
+    verifySignedMsg,
+    deriveSecret,
+    genCert,
+    privToPub,
+} from '../src/cryptoFuncs';
 import { expect } from 'chai';
 import 'mocha';
 
@@ -87,5 +95,25 @@ describe('Cryptographic Functions', () => {
         const secret2 = deriveSecret(privkey2, pubkey);
 
         expect(secret1).to.equal(secret2);
+    });
+
+    it('should correctly generate certificates', () => {
+        const tuple = genCert('asdf', 'ghjk', privkey, '127.0.0.1:8000');
+        const cert = tuple[0];
+        const tmpPrivkey = tuple[1];
+
+        const pub = privToPub(tmpPrivkey);
+
+        const obj = {
+            challenge: 'ghjk',
+            name: 'asdf',
+            pubkey,
+            timestamp: cert.timestamp,
+            tmpPubKey: pub,
+            version: '1.0.0',
+            addr: '127.0.0.1:8000',
+        };
+
+        expect(cert).to.deep.equal(obj);
     });
 });

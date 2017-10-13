@@ -8,7 +8,7 @@ import {
     REP_SENT,
     REP_RECV,
     SECRET_EST,
-} from './actions';
+} from './reduxTypes';
 import { ICert, ISocket } from './types';
 
 // class Remote {

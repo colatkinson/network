@@ -72,33 +72,3 @@ export function secretEst(name: string, secret: string) {
         type: SECRET_EST,
     };
 }
-
-// export function outOpen(socket: ISocket) {
-//     return {
-//         socket,
-//         type: OUT_OPEN,
-//     };
-// }
-
-// export function inOpen(socket: ISocket, cert: ICert) {
-//     return {
-//         cert,
-//         socket,
-//         type: IN_OPEN,
-//     };
-// }
-
-// export function genCert(cert: ICert) {
-//     return {
-//         cert,
-//         type: GEN_CERT,
-//     };
-// }
-
-// export function secretEst(name: string, secret: string) {
-//     return {
-//         name,
-//         secret,
-//         type: SECRET_EST,
-//     };
-// }

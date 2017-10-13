@@ -15,6 +15,9 @@
     <a href="https://codecov.io/gh/colatkinson/network">
         <img src="https://img.shields.io/codecov/c/github/colatkinson/network.svg?style=flat-square" alt="Codecov" />
     </a>
+    <a href="https://www.gnu.org/licenses/quick-guide-gplv3.en.html">
+        <img src="https://img.shields.io/github/license/colatkinson/network.svg?style=flat-square" alt="License" />
+    </a>
 </p>
 
 ## What even is this?

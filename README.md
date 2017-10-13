@@ -1,4 +1,10 @@
-<h1 align="center">Network</h1>
+<h1 align="center">
+    <br />
+    <img src="graphics/logo.svg" alt="Network" width="128" />
+    <br />
+    Network
+    <br />
+</h1>
 
 <p align="center"><b>Basically an unnecessary reimplementation of TLS</b></p>
 

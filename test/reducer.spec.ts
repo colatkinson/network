@@ -8,7 +8,7 @@ import * as zmq from 'zmq';
 import { ICert } from '../src/types';
 
 import networkApp from '../src/reducers';
-import { repOpen, reqOpen, reqConn, reqSent, reqRecv } from '../src/actions';
+import { repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent } from '../src/actions';
 import * as rt from '../src/reduxTypes';
 
 const pubkey = '046ea7c4b3cb54ee855c958da1a2f95d7e7898045367da27b012184f288ca8ad2' +
@@ -199,5 +199,32 @@ describe('Redux Reducer', () => {
         const bound = networkApp.bind(networkApp, undefined, { type: rt.REQ_RECV });
 
         expect(bound).to.throw(Error, 'Cert undefined in REQ_RECV');
+    });
+
+    it('should handle REP_SENT', () => {
+        const state = networkApp(undefined, repSent(cert, privkey2, 'zeus'));
+
+        const expected = {
+            repSock: null,
+            reqSock: null,
+            secrets: {},
+            foreignCerts: {},
+            nativeCerts: {
+                zeus: cert,
+            },
+            ipsToNames: {},
+            namesToIps: {},
+            tmpPrivKeys: {
+                zeus: privkey2,
+            },
+        };
+
+        expect(state).to.deep.equal(expected);
+    });
+
+    it('should throw on undefined cert, privkey, or names in REP_SENT', () => {
+        const bound = networkApp.bind(networkApp, undefined, { type: rt.REP_SENT });
+
+        expect(bound).to.throw(Error, 'Cert or name or privkey undefined in REP_SENT');
     });
 });

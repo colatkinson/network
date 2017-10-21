@@ -6,21 +6,22 @@ import * as zmq from 'zmq';
 import { createStore } from 'redux';
 import networkApp from './reducers';
 
-import { repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from './actions';
+import { loadConfig, repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from './actions';
 import { genCert, genSignedMsg, verifySignedMsg, deriveSecret } from './cryptoFuncs';
 
 import { IConfig } from './types';
-
-const configFile = (process.argv.length > 2) ? process.argv[2] : 'config.json';
-
-const configStr = fs.readFileSync(configFile, 'utf8');
-const config: IConfig = JSON.parse(configStr);
 
 const store = createStore(networkApp);
 
 store.subscribe(() => {
     console.log(store.getState());
 });
+
+const configFile = (process.argv.length > 2) ? process.argv[2] : 'config.json';
+
+const configStr = fs.readFileSync(configFile, 'utf8');
+const config: IConfig = JSON.parse(configStr);
+store.dispatch(loadConfig(config));
 
 const repSock = zmq.socket('rep');
 repSock.bindSync('tcp://*:3000');

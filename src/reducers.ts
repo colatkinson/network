@@ -1,5 +1,6 @@
 import { combineReducers } from 'redux';
 import {
+    LOAD_CONFIG,
     REP_OPEN,
     REQ_OPEN,
     REQ_CONN,
@@ -38,6 +39,18 @@ const initialState: IState = {
 
 function networkApp(state = initialState, action: IAction) {
     switch (action.type) {
+        case LOAD_CONFIG: {
+            if (typeof action.config === 'undefined') {
+                throw new Error('Config undefined in LOAD_CONFIG');
+            }
+
+            const newState = {
+                ...state,
+                config: action.config,
+            };
+
+            return newState;
+        }
         case REP_OPEN: {
             if (typeof action.socket === 'undefined') {
                 throw new Error('Socket undefined in REP_OPEN');

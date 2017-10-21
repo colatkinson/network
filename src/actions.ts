@@ -13,6 +13,7 @@ import {
 
 export function loadConfig(config: IConfig): IAction {
     return {
+        config,
         type: LOAD_CONFIG,
     };
 }

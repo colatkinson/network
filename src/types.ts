@@ -56,6 +56,7 @@ export interface IAction {
     addr?: string;
     names?: string[];
     tmpPrivKey?: string;
+    config?: IConfig;
 }
 
 export interface IConfig {

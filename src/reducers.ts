@@ -33,6 +33,7 @@ const initialState: IState = {
     ipsToNames: {},
     namesToIps: {},
     tmpPrivKeys: {},
+    config: null,
 };
 
 function networkApp(state = initialState, action: IAction) {

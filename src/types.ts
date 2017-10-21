@@ -44,6 +44,7 @@ export interface IState {
     readonly tmpPrivKeys: {
         [name: string]: string;
     };
+    readonly config: IConfig | null;
 }
 
 export interface IAction {

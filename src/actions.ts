@@ -1,5 +1,6 @@
-import { ICert, ISocket, IAction } from './types';
+import { ICert, ISocket, IAction, IConfig } from './types';
 import {
+    LOAD_CONFIG,
     REP_OPEN,
     REQ_OPEN,
     REQ_CONN,
@@ -9,6 +10,12 @@ import {
     REP_RECV,
     SECRET_EST,
 } from './reduxTypes';
+
+export function loadConfig(config: IConfig): IAction {
+    return {
+        type: LOAD_CONFIG,
+    };
+}
 
 export function repOpen(socket: ISocket): IAction {
     return {

@@ -56,3 +56,14 @@ export interface IAction {
     names?: string[];
     tmpPrivKey?: string;
 }
+
+export interface IConfig {
+    name: string;
+    privkey: string;
+    peers: Array<{
+        name: string;
+        addr: string;
+        port: number;
+    }>;
+    port: number;
+}

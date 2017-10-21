@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as net from 'net';
 import * as uuidv4 from 'uuid/v4';
 import * as zmq from 'zmq';
+import * as ip from 'ip';
 
 import { createStore } from 'redux';
 import networkApp from './reducers';
@@ -10,6 +11,8 @@ import { loadConfig, repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRe
 import { genCert, genSignedMsg, verifySignedMsg, deriveSecret } from './cryptoFuncs';
 
 import { IConfig } from './types';
+
+console.log(ip.address());
 
 const store = createStore(networkApp);
 

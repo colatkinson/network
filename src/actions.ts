@@ -1,4 +1,4 @@
-import { ICert, ISocket } from './types';
+import { ICert, ISocket, IAction } from './types';
 import {
     REP_OPEN,
     REQ_OPEN,
@@ -10,21 +10,21 @@ import {
     SECRET_EST,
 } from './reduxTypes';
 
-export function repOpen(socket: ISocket) {
+export function repOpen(socket: ISocket): IAction {
     return {
         socket,
         type: REP_OPEN,
     };
 }
 
-export function reqOpen(socket: ISocket) {
+export function reqOpen(socket: ISocket): IAction {
     return {
         socket,
         type: REQ_OPEN,
     };
 }
 
-export function reqConn(addr: string, name: string) {
+export function reqConn(addr: string, name: string): IAction {
     return {
         addr,
         name,
@@ -32,7 +32,7 @@ export function reqConn(addr: string, name: string) {
     };
 }
 
-export function reqSent(cert: ICert, tmpPrivKey: string, names: string[]) {
+export function reqSent(cert: ICert, tmpPrivKey: string, names: string[]): IAction {
     return {
         cert,
         names,
@@ -57,14 +57,14 @@ export function repSent(cert: ICert, tmpPrivKey: string, name: string) {
     };
 }
 
-export function repRecv(cert: ICert) {
+export function repRecv(cert: ICert): IAction {
     return {
         cert,
         type: REP_RECV,
     };
 }
 
-export function secretEst(name: string, secret: string) {
+export function secretEst(name: string, secret: string): IAction {
     return {
         name,
         secret,

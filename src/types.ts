@@ -21,3 +21,38 @@ export interface ISignedData {
     sig: string;
     data: string;
 }
+
+export interface IState {
+    readonly repSock: ISocket | null;
+    readonly reqSock: ISocket | null;
+    readonly secrets: {
+        [name: string]: string;
+    };
+    readonly foreignCerts: {
+        [name: string]: ICert;
+    };
+    readonly nativeCerts: {
+        [name: string]: ICert;
+    };
+    // readonly reqConns: Remote[];
+    readonly ipsToNames: {
+        [name: string]: string;
+    };
+    readonly namesToIps: {
+        [addr: string]: string;
+    };
+    readonly tmpPrivKeys: {
+        [name: string]: string;
+    };
+}
+
+export interface IAction {
+    type: string | null;
+    socket?: ISocket;
+    cert?: ICert;
+    name?: string;
+    secret?: string;
+    addr?: string;
+    names?: string[];
+    tmpPrivKey?: string;
+}

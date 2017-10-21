@@ -1,3 +1,4 @@
+export const LOAD_CONFIG = 'LOAD_CONFIG';
 export const REP_OPEN = 'REP_OPEN';
 export const REQ_OPEN = 'REQ_OPEN';
 export const REQ_CONN = 'REQ_CONN';

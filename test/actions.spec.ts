@@ -5,9 +5,9 @@ import 'mocha';
 
 import * as zmq from 'zmq';
 
-import { ICert } from '../src/types';
+import { ICert, IConfig } from '../src/types';
 
-import { repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from '../src/actions';
+import { loadConfig, repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from '../src/actions';
 import * as rt from '../src/reduxTypes';
 
 const pubkey = '046ea7c4b3cb54ee855c958da1a2f95d7e7898045367da27b012184f288ca8ad2' +
@@ -28,7 +28,31 @@ const cert: ICert = {
     addr: '127.0.0.1:8000',
 };
 
+const config: IConfig = {
+    name: 'Test2',
+    privkey: privkey2,
+    peers: [
+        {
+            name: 'Test',
+            addr: '127.0.0.1',
+            port: 5000,
+        },
+    ],
+    port: 5001,
+};
+
 describe('Redux Actions', () => {
+    it('should create an action for loading config', () => {
+        const act = loadConfig(config);
+
+        const expected = {
+            type: rt.LOAD_CONFIG,
+            config,
+        };
+
+        expect(act).to.deep.equal(expected);
+    });
+
     it('should create an action for a rep sock opening', () => {
         const socket = zmq.createSocket('rep');
         const act = repOpen(socket);

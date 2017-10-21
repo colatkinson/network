@@ -1,5 +1,6 @@
 import { combineReducers } from 'redux';
 import {
+    LOAD_CONFIG,
     REP_OPEN,
     REQ_OPEN,
     REQ_CONN,
@@ -9,7 +10,7 @@ import {
     REP_RECV,
     SECRET_EST,
 } from './reduxTypes';
-import { ICert, ISocket } from './types';
+import { ICert, ISocket, IState, IAction } from './types';
 
 // class Remote {
 //     public ip: string;
@@ -24,30 +25,6 @@ import { ICert, ISocket } from './types';
 //     }
 // }
 
-interface IState {
-    readonly repSock: ISocket | null;
-    readonly reqSock: ISocket | null;
-    readonly secrets: {
-        [name: string]: string;
-    };
-    readonly foreignCerts: {
-        [name: string]: ICert;
-    };
-    readonly nativeCerts: {
-        [name: string]: ICert;
-    };
-    // readonly reqConns: Remote[];
-    readonly ipsToNames: {
-        [name: string]: string;
-    };
-    readonly namesToIps: {
-        [addr: string]: string;
-    };
-    readonly tmpPrivKeys: {
-        [name: string]: string;
-    };
-}
-
 const initialState: IState = {
     repSock: null,
     reqSock: null,
@@ -57,21 +34,23 @@ const initialState: IState = {
     ipsToNames: {},
     namesToIps: {},
     tmpPrivKeys: {},
+    config: null,
 };
-
-interface IAction {
-    type: string | null;
-    socket?: ISocket;
-    cert?: ICert;
-    name?: string;
-    secret?: string;
-    addr?: string;
-    names?: string[];
-    tmpPrivKey?: string;
-}
 
 function networkApp(state = initialState, action: IAction) {
     switch (action.type) {
+        case LOAD_CONFIG: {
+            if (typeof action.config === 'undefined') {
+                throw new Error('Config undefined in LOAD_CONFIG');
+            }
+
+            const newState = {
+                ...state,
+                config: action.config,
+            };
+
+            return newState;
+        }
         case REP_OPEN: {
             if (typeof action.socket === 'undefined') {
                 throw new Error('Socket undefined in REP_OPEN');

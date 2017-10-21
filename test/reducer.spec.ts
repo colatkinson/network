@@ -5,10 +5,10 @@ import 'mocha';
 
 import * as zmq from 'zmq';
 
-import { ICert } from '../src/types';
+import { ICert, IConfig, IState } from '../src/types';
 
 import networkApp from '../src/reducers';
-import { repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from '../src/actions';
+import { loadConfig, repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from '../src/actions';
 import * as rt from '../src/reduxTypes';
 
 const pubkey = '046ea7c4b3cb54ee855c958da1a2f95d7e7898045367da27b012184f288ca8ad2' +
@@ -29,11 +29,24 @@ const cert: ICert = {
     addr: '127.0.0.1:8000',
 };
 
+const config: IConfig = {
+    name: 'Test2',
+    privkey: privkey2,
+    peers: [
+        {
+            name: 'Test',
+            addr: '127.0.0.1',
+            port: 5000,
+        },
+    ],
+    port: 5001,
+};
+
 describe('Redux Reducer', () => {
     it('should return the initial state', () => {
         const state = networkApp(undefined, { type: null });
 
-        const expected = {
+        const expected: IState = {
             repSock: null,
             reqSock: null,
             secrets: {},
@@ -42,13 +55,14 @@ describe('Redux Reducer', () => {
             ipsToNames: {},
             namesToIps: {},
             tmpPrivKeys: {},
+            config: null,
         };
 
         expect(state).to.deep.equal(expected);
     });
 
     it('should return the given state', () => {
-        const expected = {
+        const expected: IState = {
             repSock: null,
             reqSock: null,
             secrets: {},
@@ -57,11 +71,36 @@ describe('Redux Reducer', () => {
             ipsToNames: {},
             namesToIps: {},
             tmpPrivKeys: {},
+            config: null,
         };
 
         const state = networkApp(expected, { type: null });
 
         expect(state).to.deep.equal(expected);
+    });
+
+    it('should handle LOAD_CONFIG', () => {
+        const state = networkApp(undefined, loadConfig(config));
+
+        const expected: IState = {
+            repSock: null,
+            reqSock: null,
+            secrets: {},
+            foreignCerts: {},
+            nativeCerts: {},
+            ipsToNames: {},
+            namesToIps: {},
+            tmpPrivKeys: {},
+            config,
+        };
+
+        expect(state).to.deep.equal(expected);
+    });
+
+    it('should throw on undefined config in LOAD_CONFIG', () => {
+        const bound = networkApp.bind(networkApp, undefined, { type: rt.LOAD_CONFIG, config: undefined });
+
+        expect(bound).to.throw(Error, 'Config undefined in LOAD_CONFIG');
     });
 
     it('should handle REP_OPEN', () => {
@@ -71,7 +110,7 @@ describe('Redux Reducer', () => {
 
         socket.close();
 
-        const expected = {
+        const expected: IState = {
             repSock: socket,
             reqSock: null,
             secrets: {},
@@ -80,6 +119,7 @@ describe('Redux Reducer', () => {
             ipsToNames: {},
             namesToIps: {},
             tmpPrivKeys: {},
+            config: null,
         };
 
         expect(state).to.deep.equal(expected);
@@ -107,6 +147,7 @@ describe('Redux Reducer', () => {
             ipsToNames: {},
             namesToIps: {},
             tmpPrivKeys: {},
+            config: null,
         };
 
         expect(state).to.deep.equal(expected);
@@ -121,7 +162,7 @@ describe('Redux Reducer', () => {
     it('should handle REQ_CONN', () => {
         const state = networkApp(undefined, reqConn('127.0.0.1:8000', 'zeus'));
 
-        const expected = {
+        const expected: IState = {
             repSock: null,
             reqSock: null,
             secrets: {},
@@ -134,6 +175,7 @@ describe('Redux Reducer', () => {
                 zeus: '127.0.0.1:8000',
             },
             tmpPrivKeys: {},
+            config: null,
         };
 
         expect(state).to.deep.equal(expected);
@@ -148,7 +190,7 @@ describe('Redux Reducer', () => {
     it('should handle REQ_SENT', () => {
         const state = networkApp(undefined, reqSent(cert, privkey2, ['zeus']));
 
-        const expected = {
+        const expected: IState = {
             repSock: null,
             reqSock: null,
             secrets: {},
@@ -161,6 +203,7 @@ describe('Redux Reducer', () => {
             tmpPrivKeys: {
                 zeus: privkey2,
             },
+            config: null,
         };
 
         expect(state).to.deep.equal(expected);
@@ -175,7 +218,7 @@ describe('Redux Reducer', () => {
     it('should handle REQ_RECV', () => {
         const state = networkApp(undefined, reqRecv(cert));
 
-        const expected = {
+        const expected: IState = {
             repSock: null,
             reqSock: null,
             secrets: {},
@@ -190,6 +233,7 @@ describe('Redux Reducer', () => {
                 hera: '127.0.0.1:8000',
             },
             tmpPrivKeys: {},
+            config: null,
         };
 
         expect(state).to.deep.equal(expected);
@@ -204,7 +248,7 @@ describe('Redux Reducer', () => {
     it('should handle REP_SENT', () => {
         const state = networkApp(undefined, repSent(cert, privkey2, 'zeus'));
 
-        const expected = {
+        const expected: IState = {
             repSock: null,
             reqSock: null,
             secrets: {},
@@ -217,6 +261,7 @@ describe('Redux Reducer', () => {
             tmpPrivKeys: {
                 zeus: privkey2,
             },
+            config: null,
         };
 
         expect(state).to.deep.equal(expected);
@@ -231,7 +276,7 @@ describe('Redux Reducer', () => {
     it('should handle REP_RECV', () => {
         const state = networkApp(undefined, repRecv(cert));
 
-        const expected = {
+        const expected: IState = {
             repSock: null,
             reqSock: null,
             secrets: {},
@@ -242,6 +287,7 @@ describe('Redux Reducer', () => {
             ipsToNames: {},
             namesToIps: {},
             tmpPrivKeys: {},
+            config: null,
         };
 
         expect(state).to.deep.equal(expected);
@@ -256,7 +302,7 @@ describe('Redux Reducer', () => {
     it('should handle SECRET_EST', () => {
         const state = networkApp(undefined, secretEst('hera', '0123456789abcdef'));
 
-        const expected = {
+        const expected: IState = {
             repSock: null,
             reqSock: null,
             secrets: {
@@ -267,6 +313,7 @@ describe('Redux Reducer', () => {
             ipsToNames: {},
             namesToIps: {},
             tmpPrivKeys: {},
+            config: null,
         };
 
         expect(state).to.deep.equal(expected);

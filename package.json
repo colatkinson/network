@@ -8,6 +8,7 @@
   "private": true,
   "devDependencies": {
     "@types/chai": "^4.0.4",
+    "@types/ip": "^0.0.30",
     "@types/mocha": "^2.2.43",
     "@types/node": "^8.0.28",
     "@types/redux": "^3.6.0",
@@ -22,9 +23,9 @@
     "typescript": "^2.5.2"
   },
   "scripts": {
-    "build": "./node_modules/typescript/bin/tsc --sourcemap",
+    "build": "./node_modules/typescript/bin/tsc",
     "prestart": "yarn build",
-    "start": "node ./build/index.js",
+    "start": "node ./build/src/index.js",
     "pretest": "yarn build",
     "test": "./node_modules/nyc/bin/nyc.js ./node_modules/mocha/bin/mocha"
   },

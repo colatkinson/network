@@ -50,6 +50,8 @@ repSock.on('message', function(this: any, msg) {
         const serverSec = deriveSecret(serverTmpPrivKey, certMsg.tmpPubKey);
 
         store.dispatch(secretEst(certMsg.name, serverSec));
+    } else {
+        console.error(`Could not verify message from ${certMsg.name}`);
     }
 });
 
@@ -65,6 +67,8 @@ for (const peer of config.peers) {
 
             const clientSec = deriveSecret(tmpPrivKey, recvCertMsg.tmpPubKey);
             store.dispatch(secretEst(peer.name, clientSec));
+        } else {
+            console.error(`Could not verify message from ${recvCertMsg.name}`);
         }
     });
 

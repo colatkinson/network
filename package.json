@@ -38,7 +38,8 @@
       "**/*.d.ts",
       "**/*.spec.ts",
       "coverage",
-      "build"
+      "build",
+      "scripts"
     ],
     "reporter": [
       "html",

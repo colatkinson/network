@@ -10,9 +10,9 @@ import networkApp from './reducers';
 import { loadConfig, repOpen, reqOpen, reqConn, reqSent, reqRecv, repSent, repRecv, secretEst } from './actions';
 import { genCert, genSignedMsg, verifySignedMsg, deriveSecret } from './cryptoFuncs';
 
-import { IConfig } from './types';
+import { IConfig, ICert } from './types';
 
-console.log(ip.address());
+const ipAddr = ip.address();
 
 const store = createStore(networkApp);
 
@@ -27,63 +27,59 @@ const config: IConfig = JSON.parse(configStr);
 store.dispatch(loadConfig(config));
 
 const repSock = zmq.socket('rep');
-repSock.bindSync('tcp://*:3000');
+repSock.bindSync(`tcp://*:${config.port}`);
 
 repSock.on('message', function(this: any, msg) {
     const sigMsg = JSON.parse(msg.toString());
-    const certMsg = JSON.parse(sigMsg.data);
+    const certMsg: ICert = JSON.parse(sigMsg.data);
     if (verifySignedMsg(sigMsg, certMsg.pubkey)) {
         store.dispatch(reqRecv(certMsg));
 
         const challenge = certMsg.challenge;
 
-        const serverTuple = genCert('3000', challenge, config.privkey, '127.0.0.1:3000');
+        const serverTuple = genCert(config.name, challenge, config.privkey, `${ipAddr}:${config.port}`);
         const serverCert = serverTuple[0];
         const serverTmpPrivKey = serverTuple[1];
 
         const serverSigMsg = genSignedMsg(JSON.stringify(serverCert), config.privkey);
 
-        // cert.addr = '69.69.69.69:69';
-        // clientSigMsg.data = JSON.stringify(cert);
-
         repSock.send(JSON.stringify(serverSigMsg));
 
-        store.dispatch(repSent(serverCert, serverTmpPrivKey, '3009'));
+        store.dispatch(repSent(serverCert, serverTmpPrivKey, certMsg.name));
 
         const serverSec = deriveSecret(serverTmpPrivKey, certMsg.tmpPubKey);
 
-        store.dispatch(secretEst('3009', serverSec));
+        store.dispatch(secretEst(certMsg.name, serverSec));
     }
 });
 
 store.dispatch(repOpen(repSock));
 
-const reqSock = zmq.socket('req');
-reqSock.on('message', (msg) => {
-    const recvSigMsg = JSON.parse(msg.toString());
-    const recvCertMsg = JSON.parse(recvSigMsg.data);
-    if (verifySignedMsg(recvSigMsg, recvCertMsg.pubkey)) {
-        store.dispatch(repRecv(recvCertMsg));
+for (const peer of config.peers) {
+    const reqSock = zmq.socket('req');
+    reqSock.on('message', (msg) => {
+        const recvSigMsg = JSON.parse(msg.toString());
+        const recvCertMsg = JSON.parse(recvSigMsg.data);
+        if (verifySignedMsg(recvSigMsg, recvCertMsg.pubkey)) {
+            store.dispatch(repRecv(recvCertMsg));
 
-        const clientSec = deriveSecret(tmpPrivKey, recvCertMsg.tmpPubKey);
-        store.dispatch(secretEst('3000', clientSec));
-    }
-});
+            const clientSec = deriveSecret(tmpPrivKey, recvCertMsg.tmpPubKey);
+            store.dispatch(secretEst(peer.name, clientSec));
+        }
+    });
 
-store.dispatch(reqOpen(reqSock));
+    store.dispatch(reqOpen(reqSock));
 
-reqSock.connect('tcp://127.0.0.1:3000');
-store.dispatch(reqConn('127.0.0.1:3000', '3000'));
+    reqSock.connect(`tcp://${peer.addr}:${peer.port}`);
+    store.dispatch(reqConn(`tcp://${peer.addr}:${peer.port}`, peer.name));
 
-const tuple = genCert('3009', uuidv4(), config.privkey, '127.0.0.1:3009');
-const cert = tuple[0];
-const tmpPrivKey = tuple[1];
+    const tuple = genCert(config.name, uuidv4(), config.privkey, `${ipAddr}:${config.port}`);
+    const cert = tuple[0];
+    const tmpPrivKey = tuple[1];
 
-const clientSigMsg = genSignedMsg(JSON.stringify(cert), config.privkey);
+    const clientSigMsg = genSignedMsg(JSON.stringify(cert), config.privkey);
 
-// cert.addr = '69.69.69.69:69';
-// clientSigMsg.data = JSON.stringify(cert);
+    reqSock.send(JSON.stringify(clientSigMsg));
 
-reqSock.send(JSON.stringify(clientSigMsg));
-
-store.dispatch(reqSent(cert, tmpPrivKey, ['3000']));
+    store.dispatch(reqSent(cert, tmpPrivKey, [peer.name]));
+}
